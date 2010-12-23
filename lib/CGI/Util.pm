@@ -230,7 +230,7 @@ sub unescape {
   return $todecode;
 }
 
-# URL-encode data
+# URI percent-encode data
 #
 # We cannot use the %u escapes, they were rejected by W3C, so the official
 # way is %XX-escaped utf-8 encoding.
@@ -366,11 +366,34 @@ CGI::Util - Internal utilities used by CGI module
 
 =head1 SYNOPSIS
 
-none
+  use CGI::Util qw(escape unescape);
+
+  # Percent-encode a URI
+  my $encoded_uri = escape($uri);
+
+  # Decode a percent-encoded URI
+  my $uri = unescape($encoded_uri);
 
 =head1 DESCRIPTION
 
-no public subroutines
+This module contains primarily non-public functions which are used internally
+by CGI.pm. The following functions are public.
+
+=head2 PUBLIC FUNCTIONS
+
+=head3 escape()
+
+  # Percent-encode a URI
+  my $encoded_uri = escape($uri);
+
+Takes a URI fragment as input and returns the value percent-encoded as RFC
+3986 specifies.
+
+=head unescape()
+
+  # Decode a percent-encoded URI
+  my $uri = unescape($encoded_uri);
+
 
 =head1 AUTHOR INFORMATION
 
