@@ -1,0 +1,71 @@
+--- cgi-lib_porting.html
++++ cgi-lib_porting.html
+@@ -88,7 +88,7 @@
+ 
+ <h2>How do I migrate from cgi-lib.pl to CGI.pm?</h2>
+ 
+-A compatability mode allows you to port most scripts that use
++A compatibility mode allows you to port most scripts that use
+ cgi-lib.pl to CGI.pm without making extensive source code changes.
+ Most of the functions defined in cgi-lib.pl version 2.10 are available
+ for your use.  Missing functions are easy to work around.  Follow this
+@@ -120,7 +120,7 @@
+ </pre></blockquote>
+ 
+ instructs Perl to read in CGI.pm and to import into your script's name
+-space the cgi-lib.pl compatability routines.  (In case you've never
++space the cgi-lib.pl compatibility routines.  (In case you've never
+ run into this syntax before, the colon in front of
+ <code>cgi-lib</code> indicates that we're importing a family of
+ routines identified by the tag <cite>cgi-lib</cite> rather than a
+@@ -173,7 +173,7 @@
+ 
+ <h2>Cgi-lib functions that are available in CGI.pm</h2>
+ 
+-In compatability mode, the following cgi-lib.pl functions are
++In compatibility mode, the following cgi-lib.pl functions are
+ available for your use:
+ 
+ <ol>
+@@ -237,7 +237,7 @@
+ 
+ <h2>Caveats</h2>
+ 
+-The compatability routines are a recent feature (added in CGI.pm
++The compatibility routines are a recent feature (added in CGI.pm
+ version 2.20, released on May 22, 1996) and may contain bugs.
+ <strong>Caveat emptor!</strong>
+ <hr>
+--- Pretty.pm
++++ Pretty.pm
+@@ -252,7 +252,7 @@
+ =head2 Recommendation for when to use CGI::Pretty
+ 
+ CGI::Pretty is far slower than using CGI.pm directly. A benchmark showed that
+-it could be about 10 times slower. Adding newslines and spaces may alter the
++it could be about 10 times slower. Adding newlines and spaces may alter the
+ rendered appearance of HTML. Also, the extra newlines and spaces also make the
+ file size larger, making the files take longer to download.
+ 
+--- Push.pm
++++ Push.pm
+@@ -214,7 +214,7 @@
+ 
+ This optional parameter indicates the content type of each page.  It
+ defaults to "text/html".  Normally the module assumes that each page
+-is of a homogenous MIME type.  However if you provide either of the
++is of a homogeneous MIME type.  However if you provide either of the
+ magic values "heterogeneous" or "dynamic" (the latter provided for the
+ convenience of those who hate long parameter names), you can specify
+ the MIME type -- and other header fields -- on a per-page basis.  See 
+--- Util.pm
++++ Util.pm
+@@ -383,7 +383,7 @@
+ Perl, the name and version of your Web server, and the name and
+ version of the operating system you are using.  If the problem is even
+ remotely browser dependent, please provide information about the
+-affected browers as well.
++affected browsers as well.
+ 
+ =head1 SEE ALSO
+ 

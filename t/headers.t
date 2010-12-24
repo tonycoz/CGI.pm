@@ -44,4 +44,3 @@ like($@,qr/contains a newline/,'redirect with leading newlines blows up');
     like($@,qr/contains a newline/, "redirect does not allow double-newline injection");
 }
 
-
