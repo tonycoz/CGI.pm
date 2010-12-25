@@ -1563,7 +1563,7 @@ sub header {
             $header =~ s/$CRLF(\s)/$1/g;
 
             # All other uses of newlines are invalid input. 
-            if ($header =~ m/$CRLF/) {
+            if ($header =~ m/$CRLF|\015|\012/) {
                 # shorten very long values in the diagnostic
                 $header = substr($header,0,72).'...' if (length $header > 72);
                 die "Invalid header value contains a newline not followed by whitespace: $header";
@@ -1870,20 +1870,20 @@ sub _script {
 
     my (@scripts) = ref($script) eq 'ARRAY' ? @$script : ($script);
     for $script (@scripts) {
-	my($src,$code,$language);
-	if (ref($script)) { # script is a hash
-	    ($src,$code,$type) =
-		rearrange(['SRC','CODE',['LANGUAGE','TYPE']],
-				 '-foo'=>'bar',	# a trick to allow the '-' to be omitted
-				 ref($script) eq 'ARRAY' ? @$script : %$script);
+    my($src,$code,$language,$charset);
+    if (ref($script)) { # script is a hash
+        ($src,$code,$type,$charset) =
+        rearrange(['SRC','CODE',['LANGUAGE','TYPE'],'CHARSET'],
+                 '-foo'=>'bar', # a trick to allow the '-' to be omitted
+                 ref($script) eq 'ARRAY' ? @$script : %$script);
             $type ||= 'text/javascript';
             unless ($type =~ m!\w+/\w+!) {
                 $type =~ s/[\d.]+$//;
                 $type = "text/$type";
             }
-	} else {
-	    ($src,$code,$type) = ('',$script, 'text/javascript');
-	}
+    } else {
+        ($src,$code,$type,$charset) = ('',$script, 'text/javascript', '');
+    }
 
     my $comment = '//';  # javascript by default
     $comment = '#' if $type=~/perl|tcl/i;
@@ -1901,6 +1901,7 @@ sub _script {
      my(@satts);
      push(@satts,'src'=>$src) if $src;
      push(@satts,'type'=>$type);
+     push(@satts,'charset'=>$charset) if ($src && $charset);
      $code = $cdata_start . $code . $cdata_end if defined $code;
      push(@result,$self->script({@satts},$code || ''));
     }
@@ -3647,7 +3648,7 @@ sub read_multipart {
 	    last if defined($filehandle = Fh->new($filename,$tmp,$PRIVATE_TEMPFILES));
             $seqno += int rand(100);
           }
-          die "CGI open of tmpfile: $!\n" unless defined $filehandle;
+          die "CGI.pm open of tmpfile $tmp/$filename failed: $!\n" unless defined $filehandle;
 	  $CGI::DefaultClass->binmode($filehandle) if $CGI::needs_binmode 
                      && defined fileno($filehandle);
 
@@ -4282,7 +4283,10 @@ $AUTOLOADED_ROUTINES=<<'END_OF_AUTOLOAD';
 sub new {
     my($package,$sequence) = @_;
     my $filename;
-    find_tempdir() unless -w $TMPDIRECTORY;
+    unless (-w $TMPDIRECTORY) {
+        $TMPDIRECTORY = undef;
+        find_tempdir();
+    }
     for (my $i = 0; $i < $MAXTRIES; $i++) {
 	last if ! -f ($filename = sprintf("\%s${SL}CGItemp%d", $TMPDIRECTORY, $sequence++));
     }
@@ -5140,8 +5144,7 @@ file is created with mode 0600 (neither world nor group readable).
 
 The temporary directory is selected using the following algorithm:
 
-    1. if the current user (e.g. "nobody") has a directory named
-    "tmp" in its home directory, use that (Unix systems only).
+    1. if $CGITempFile::TMPDIRECTORY is already set, use that
 
     2. if the environment variable TMPDIR exists, use the location
     indicated.
@@ -5509,12 +5512,10 @@ Use the B<-noScript> parameter to pass some HTML text that will be displayed on
 browsers that do not have JavaScript (or browsers where JavaScript is turned
 off).
 
-The <script> tag, has several attributes including "type" and src.
-The latter is particularly interesting, as it allows you to keep the
-JavaScript code in a file or CGI script rather than cluttering up each
-page with the source.  To use these attributes pass a HASH reference
-in the B<-script> parameter containing one or more of -type, -src, or
--code:
+The <script> tag, has several attributes including "type", "charset" and "src".
+"src" allows you to keep JavaScript code in an external file. To use these
+attributes pass a HASH reference in the B<-script> parameter containing one or
+more of -type, -src, or -code:
 
     print $q->start_html(-title=>'The Riddle of the Sphinx',
 			 -script=>{-type=>'JAVASCRIPT',
@@ -5695,14 +5696,8 @@ method, the results will not be what you expect.
 
 =head1 CREATING STANDARD HTML ELEMENTS:
 
-CGI.pm defines general HTML shortcut methods for most, if not all of
-the HTML 3 and HTML 4 tags.  HTML shortcuts are named after a single
-HTML element and return a fragment of HTML text that you can then
-print or manipulate as you like.  Each shortcut returns a fragment of
-HTML code that you can append to a string, save to a file, or, most
-commonly, print out so that it displays in the browser window.
-
-This example shows how to use the HTML methods:
+CGI.pm defines general HTML shortcut methods for many HTML tags.  HTML shortcuts are named after a single
+HTML element and return a fragment of HTML text. Example:
 
    print $q->blockquote(
 		     "Many years ago on the island of",
@@ -7948,18 +7943,67 @@ NEW VERSION
 CGI.pm's ReadParse() routine creates a tied variable named %in,
 which can be accessed to obtain the query variables.  Like
 ReadParse, you can also provide your own variable.  Infrequently
-used features of ReadParse, such as the creation of @in and $in 
+used features of ReadParse, such as the creation of @in and $in
 variables, are not supported.
 
 Once you use ReadParse, you can retrieve the query object itself
 this way:
 
     $q = $in{CGI};
-    print textfield(-name=>'wow',
-			-value=>'does this really work?');
+    print $q->textfield(-name=>'wow',
+            -value=>'does this really work?');
 
 This allows you to start using the more interesting features
 of CGI.pm without rewriting your old scripts from scratch.
+
+An even simpler way to mix cgi-lib calls with CGI.pm calls is to import both the
+C<:cgi-lib> and C<:standard> method:
+
+ use CGI qw(:cgi-lib :standard);
+ &ReadParse;
+ print "The price of your purchase is $in{price}.\n";
+ print textfield(-name=>'price', -default=>'$1.99');
+
+=head2 Cgi-lib functions that are available in CGI.pm
+
+In compatability mode, the following cgi-lib.pl functions are
+available for your use:
+
+ ReadParse()
+ PrintHeader()
+ HtmlTop()
+ HtmlBot()
+ SplitParam()
+ MethGet()
+ MethPost()
+
+=head2 Cgi-lib functions that are not available in CGI.pm
+
+  * Extended form of ReadParse()
+    The extended form of ReadParse() that provides for file upload
+    spooling, is not available.
+
+  * MyBaseURL()
+    This function is not available.  Use CGI.pm's url() method instead.
+
+  * MyFullURL()
+    This function is not available.  Use CGI.pm's self_url() method
+    instead.
+
+  * CgiError(), CgiDie()
+    These functions are not supported.  Look at CGI::Carp for the way I
+    prefer to handle error messages.
+
+  * PrintVariables()
+    This function is not available.  To achieve the same effect,
+       just print out the CGI object:
+
+       use CGI qw(:standard);
+       $q = CGI->new;
+       print h1("The Variables Are"),$q;
+
+  * PrintEnv()
+    This function is not available. You'll have to roll your own if you really need it.
 
 =head1 AUTHOR INFORMATION
 
