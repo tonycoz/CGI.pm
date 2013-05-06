@@ -129,8 +129,6 @@ ok( defined $q->upload('300x300_gif')       , 'upload_basic_4' );
     # check it acts like a handle
     seek($rawhandle, 0, 2);
     is(tell($rawhandle), 1656, "check it acts like a handle");
-
-    local $TODO = "the handle points at a file it should have file methods";
     ok(eval { $rawhandle->seek(0, 2); 1 }, "can call seek() on handle result");
 }
 

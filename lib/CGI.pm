@@ -3894,8 +3894,8 @@ END_OF_FUNC
 'handle' => <<'END_OF_FUNC',
 sub handle {
   my $self = shift;
-  eval "require IO::Handle" unless IO::Handle->can('new_from_fd');
-  return IO::Handle->new_from_fd(fileno $self,"<");
+  eval "require IO::File" unless IO::Handle->can('new_from_fd');
+  return IO::File->new_from_fd(fileno $self,"<");
 }
 END_OF_FUNC
 
